@@ -1,6 +1,6 @@
 use log::info;
 use crate::chip_set::{ChipSet, PurchasableChip};
-use crate::player::Player;
+use crate::players::player::Player;
 
 #[derive(Debug)]
 pub struct Game {
@@ -24,6 +24,10 @@ impl Game {
         for _ in 0..9 {
             self.play_through_round();
         }
+        for player in self.players.iter_mut() {
+            player.player_stats.starting_index = player.board.start_index as i32;
+            player.player_stats.score = player.score;
+        }
     }
 
     fn play_through_round(&mut self) {
@@ -44,6 +48,12 @@ impl Game {
         }
     }
 
+    pub fn print_stats(&self) {
+        for player in self.players.iter() {
+            println!("{:?}", player.player_stats);
+        }
+    }
+
     fn phase_1(&mut self) {
         for player in self.players.iter_mut() {
             player.play_through_phase_1();
@@ -51,8 +61,11 @@ impl Game {
     }
 
     fn phase_2(&mut self) {
-        // reworked
-        self.players[0].phase_2_role_dice();
+        let max_board_space_option = self.players.iter().filter(|player| !player.is_exploded()).map(|player| player.board.get_board_space_position()).max_by_key(|position| *position);
+
+        if let Some(max_board_space) = max_board_space_option {
+            self.players.iter_mut().filter(|player| !player.is_exploded() && player.board.get_board_space_position() == max_board_space).for_each(|player| player.phase_2_role_dice());
+        }
     }
 
     fn phase_3(&mut self) {

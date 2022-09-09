@@ -1,11 +1,11 @@
 use std::fmt::Formatter;
 use crate::chips::is_chip::IsChip;
-use crate::player::Player;
+use crate::players::player::Player;
 
 #[derive(Clone, Debug)]
 pub struct OrangeChip {
     value: usize,
-    original_value: usize,
+    _original_value: usize,
     color: &'static str
 }
 
@@ -13,7 +13,7 @@ impl OrangeChip {
     pub fn new(value: usize) -> Self {
         OrangeChip {
             value,
-            original_value: value,
+            _original_value: value,
             color: "orange"
         }
     }
@@ -36,8 +36,6 @@ impl IsChip for OrangeChip {
         self.color
     }
 
-    fn perform_chapter_one_logic(&mut self, _player: &mut Player) -> Option<Box<dyn IsChip>> {
-
-        None
+    fn perform_chapter_one_logic(&mut self, _player: &mut Player) {
     }
 }

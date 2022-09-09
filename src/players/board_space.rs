@@ -1,4 +1,6 @@
 pub const MAX_BOARD_SPACES: usize = 54;
+// the very last space is cannot be played on
+pub const LAST_PLAYABLE_SPACE: usize = MAX_BOARD_SPACES - 1;
 
 static BOARD_SPACES: [BoardSpace; MAX_BOARD_SPACES] = [
     BoardSpace { money: 0, points: 0, gem: false },

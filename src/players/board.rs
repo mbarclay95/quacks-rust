@@ -1,18 +1,17 @@
-use std::fmt::Error;
-use crate::board_space::{BoardSpace, MAX_BOARD_SPACES};
 use crate::chips::is_chip::IsChip;
+use crate::players::board_space::{BoardSpace, LAST_PLAYABLE_SPACE};
 
 #[derive(Debug)]
 pub struct Board {
     pub explode_limit: usize,
-    start_index: usize, // droplet
+    pub start_index: usize, // droplet
     bonus_value: usize, // rat tail
     played_chips: Vec<PlayedSpace>,
 }
 
 #[derive(Debug)]
 pub struct PlayedSpace {
-    board_space_index: usize,
+    _board_space_index: usize,
     chip: Box<dyn IsChip>
 }
 
@@ -43,15 +42,15 @@ impl Board {
         &self.played_chips[index].chip
     }
 
-    pub fn play_chip(&mut self, chip: Box<dyn IsChip>) {
-        let board_space_index = if self.get_board_space_position() + (chip.get_value() - 1) >= MAX_BOARD_SPACES {
-            MAX_BOARD_SPACES - 1
+    pub fn play_chip(&mut self, chip: &Box<dyn IsChip>) {
+        let board_space_index = if self.get_board_space_position() + (chip.get_value() - 1) > LAST_PLAYABLE_SPACE {
+            LAST_PLAYABLE_SPACE
         } else {
             self.get_board_space_position() + (chip.get_value() - 1)
         };
         self.played_chips.push(PlayedSpace {
-            board_space_index,
-            chip
+            _board_space_index: board_space_index,
+            chip: chip.clone_dyn()
         });
     }
 

@@ -1,23 +1,26 @@
 use log::info;
-use crate::board::Board;
+use rand::Rng;
+
+use crate::{ChipSet, SELECTED_CHIP_SET};
+use crate::chip_set::PurchasableChip;
 use crate::chips::green_chip::GreenChip;
 use crate::chips::is_chip::IsChip;
 use crate::chips::orange_chip::OrangeChip;
 use crate::chips::white_chip::WhiteChip;
-use rand::Rng;
-use crate::{ChipSet, SELECTED_CHIP_SET};
-use crate::board_space::MAX_BOARD_SPACES;
-use crate::chip_set::PurchasableChip;
+use crate::players::board::Board;
+use crate::players::board_space::{LAST_PLAYABLE_SPACE};
+use crate::players::player_stats::PlayerStats;
 
 #[derive(Debug)]
 pub struct Player {
     pub name: &'static str,
     pub board: Board,
     pub score: i32,
-    gems: usize,
-    potion: bool,
+    pub player_stats: PlayerStats,
     pub bag: Vec<Box<dyn IsChip>>,
-    all_chips: Vec<Box<dyn IsChip>>
+    gems: usize,
+    has_potion: bool,
+    all_chips: Vec<Box<dyn IsChip>>,
 }
 
 impl Player {
@@ -27,7 +30,7 @@ impl Player {
             board: Board::new(),
             score: 0,
             gems: 1,
-            potion: true,
+            has_potion: true,
             bag: vec![],
             all_chips: vec![
                 Box::new(OrangeChip::new(1)),
@@ -39,14 +42,18 @@ impl Player {
                 Box::new(WhiteChip::new(2)),
                 Box::new(WhiteChip::new(2)),
                 Box::new(WhiteChip::new(3)),
-            ]
+            ],
+            player_stats: PlayerStats::new(),
         }
     }
 
     pub fn play_through_phase_1(&mut self) {
         self.reset_bag();
         while !self.stop_drawing() {
-            self.draw_chip().unwrap();
+            self.draw_chip();
+        }
+        if self.is_exploded() {
+            self.player_stats.times_exploded += 1;
         }
         info!("Made it to: {:?} and exploded = {}", self.board.get_current_space(), self.is_exploded());
     }
@@ -56,11 +63,26 @@ impl Player {
         let rand_num: i32 = rng.gen_range(0..6);
         info!("Dice role : {}", rand_num);
         match rand_num {
-            0 | 1 => self.score += 1,
-            2 => self.score += 2,
-            3 => self.gems += 1,
-            4 => self.board.increase_start_index(1),
-            5 => self.all_chips.push(Box::new(OrangeChip::new(1))),
+            0 | 1 => {
+                self.score += 1;
+                self.player_stats.points_from_dice += 1;
+            }
+            2 => {
+                self.score += 2;
+                self.player_stats.points_from_dice += 2;
+            }
+            3 => {
+                self.gems += 1;
+                self.player_stats.gems_from_dice += 1;
+            }
+            4 => {
+                self.board.increase_start_index(1);
+                self.player_stats.start_advance_from_dice += 1;
+            }
+            5 => {
+                self.all_chips.push(Box::new(OrangeChip::new(1)));
+                self.player_stats.orange_from_dice += 1;
+            }
             _ => {}
         }
     }
@@ -71,10 +93,12 @@ impl Player {
                 let played_chips_length = self.board.get_played_chip_len();
                 if self.board.get_played_chip(played_chips_length - 1).get_color() == "green" {
                     self.gems += 1;
+                    self.player_stats.green_activation_count += 1;
                     info!("Received a gem from green chip");
                 }
                 if self.board.get_played_chip(played_chips_length - 2).get_color() == "green" {
                     self.gems += 1;
+                    self.player_stats.green_activation_count += 1;
                     info!("Received a gem from green chip");
                 }
             }
@@ -90,15 +114,20 @@ impl Player {
             ChipSet::ChapterOne => {
                 let purple_num = self.board.get_played_chips_of_color("purple").len();
                 match purple_num {
-                    0 => {},
-                    1 => self.score += 1,
+                    0 => {}
+                    1 => {
+                        self.score += 1;
+                        self.player_stats.green_activation_count += 1;
+                    }
                     2 => {
                         self.score += 1;
                         self.gems += 1;
-                    },
+                        self.player_stats.purple_activation_count += 1;
+                    }
                     _ => {
                         self.score += 2;
                         self.board.increase_start_index(1);
+                        self.player_stats.purple_activation_count += 1;
                     }
                 }
             }
@@ -110,6 +139,7 @@ impl Player {
             info!("Received reward from black chip");
             self.gems += 1;
             self.board.increase_start_index(1);
+            self.player_stats.black_activation_count += 1;
         }
     }
 
@@ -117,6 +147,7 @@ impl Player {
         if self.board.get_current_space().gem {
             info!("Received a gem from board space");
             self.gems += 1;
+            self.player_stats.gems_from_board += 1;
         }
     }
 
@@ -136,42 +167,66 @@ impl Player {
         if money_amount < 3 {
             return;
         }
-        let most_expensive_chip = purchasable_chips.iter().filter(|p| p.price <= money_amount).max_by_key(|p| p.price);
-        let mut already_purchased_color = "";
-        if let Some(purchasable_chip) = most_expensive_chip {
-            money_amount -= purchasable_chip.price;
-            already_purchased_color = purchasable_chip.chip.get_color();
-            self.all_chips.push(purchasable_chip.chip.clone());
-            info!("Purchased: {:?}", purchasable_chip);
-        }
-        if money_amount < 3 {
+        let mut rng = rand::thread_rng();
+        let affordable_chips = purchasable_chips.iter().filter(|p| p.price <= money_amount).collect::<Vec<&PurchasableChip>>();
+        let index = rng.gen_range(0..affordable_chips.len());
+        let purchased_chip = affordable_chips[index];
+        money_amount -= purchased_chip.price;
+        let already_purchased_color = purchased_chip.chip.get_color();
+        self.all_chips.push(purchased_chip.chip.clone());
+        self.player_stats.increment_correct_chip_count(purchased_chip.chip.get_color());
+        info!("Purchased: {:?}", purchased_chip);
+        // let most_expensive_chip = purchasable_chips.iter().filter(|p| p.price <= money_amount).max_by_key(|p| p.price);
+        // let mut already_purchased_color = "";
+        // if let Some(purchasable_chip) = most_expensive_chip {
+        //     money_amount -= purchasable_chip.price;
+        //     already_purchased_color = purchasable_chip.chip.get_color();
+        //     self.all_chips.push(purchasable_chip.chip.clone());
+        //     self.player_stats.increment_correct_chip_count(purchasable_chip.chip.get_color());
+        //     info!("Purchased: {:?}", purchasable_chip);
+        // }
+        let affordable_chips = purchasable_chips.iter().filter(|p| p.price <= money_amount && p.chip.get_color() != already_purchased_color).collect::<Vec<&PurchasableChip>>();
+        if affordable_chips.is_empty() {
             return;
         }
-        let most_expensive_chip = purchasable_chips.iter().filter(|p| p.price <= money_amount && p.chip.get_color() != already_purchased_color).max_by_key(|p| p.price);
-        if let Some(purchasable_chip) = most_expensive_chip {
-            self.all_chips.push(purchasable_chip.chip.clone());
-            info!("Purchased: {:?}", purchasable_chip);
-        }
+        let index = rng.gen_range(0..affordable_chips.len());
+        let purchased_chip = affordable_chips[index];
+        self.all_chips.push(purchased_chip.chip.clone());
+        self.player_stats.increment_correct_chip_count(purchased_chip.chip.get_color());
+        info!("Purchased: {:?}", purchased_chip);
+        // let most_expensive_chip = purchasable_chips.iter().filter(|p| p.price <= money_amount && p.chip.get_color() != already_purchased_color).max_by_key(|p| p.price);
+        // if let Some(purchasable_chip) = most_expensive_chip {
+        //     self.all_chips.push(purchasable_chip.chip.clone());
+        //     self.player_stats.increment_correct_chip_count(purchasable_chip.chip.get_color());
+        //     info!("Purchased: {:?}", purchasable_chip);
+        // }
     }
 
     pub fn phase_7_spend_gems(&mut self, final_round: bool) {
         if self.gems > 1 {
-            let num_of_purchases: usize = self.gems / 2;
+            let mut num_of_purchases = self.gems / 2;
             info!("Spending {} gems on {} purchases", self.gems, num_of_purchases);
             if final_round {
                 self.score += num_of_purchases as i32;
+                self.player_stats.points_from_gems += num_of_purchases as i32;
             } else {
+                if !self.has_potion && rand::random() {
+                    self.has_potion = true;
+                    num_of_purchases -= 1;
+                    self.player_stats.bought_potions += 1;
+                }
                 self.board.increase_start_index(num_of_purchases);
+                self.player_stats.bought_start_advances += num_of_purchases as i32;
             }
             self.gems -= num_of_purchases * 2;
         }
     }
 
     fn stop_drawing(&self) -> bool {
-        if self.is_exploded() {
+        if self.bag.is_empty() || self.is_exploded() {
             return true;
         }
-        if self.board.get_board_space_position() >= MAX_BOARD_SPACES - 1 {
+        if self.board.get_board_space_position() >= LAST_PLAYABLE_SPACE {
             return true;
         }
         let white_count = self.board.get_white_count();
@@ -197,25 +252,29 @@ impl Player {
         self.bag = self.all_chips.clone();
     }
 
-    pub fn draw_chip(&mut self) -> Result<(), &'static str> {
+    pub fn draw_chip(&mut self) {
         if self.bag.is_empty() {
-            return Err("Bag is empty");
+            return;
         }
         let mut rng = rand::thread_rng();
         let index = rng.gen_range(0..self.bag.len());
         let mut drawn_chip = self.bag[index].clone();
-        self.bag.remove(index);
-        let additional_chip = drawn_chip.perform_chip_logic(self);
         info!("Drawn chip: {:?}", drawn_chip);
-        self.board.play_chip(drawn_chip);
-
-        if let Some(mut chip) = additional_chip {
-            chip.perform_chip_logic(self);
-            info!("Additional chip: {:?}", chip);
-            self.board.play_chip(chip);
+        if drawn_chip.get_color() == "white" && self.has_potion && rand::random() {
+            info!("Used potion");
+            self.player_stats.num_potions_used += 1;
+            self.has_potion = false;
+            return;
         }
+        self.bag.remove(index);
 
-        Ok(())
+        // I think this is the only chip in the game that needs to be played before logic happens
+        if matches!(SELECTED_CHIP_SET, ChipSet::ChapterOne) && drawn_chip.get_color() == "blue" {
+            self.board.play_chip(&drawn_chip);
+            drawn_chip.perform_chip_logic(self);
+        } else {
+            drawn_chip.perform_chip_logic(self);
+            self.board.play_chip(&drawn_chip);
+        }
     }
-
 }

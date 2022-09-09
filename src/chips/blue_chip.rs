@@ -1,7 +1,7 @@
 use std::fmt::Formatter;
 use rand::Rng;
 use crate::chips::is_chip::IsChip;
-use crate::player::Player;
+use crate::players::player::Player;
 
 #[derive(Clone, Debug)]
 pub struct BlueChip {
@@ -37,7 +37,8 @@ impl IsChip for BlueChip {
         self.color
     }
 
-    fn perform_chapter_one_logic(&mut self, player: &mut Player) -> Option<Box<dyn IsChip>> {
+    fn perform_chapter_one_logic(&mut self, player: &mut Player) {
+        player.player_stats.blue_activation_count += 1;
         let mut drawn_chips: Vec<Box<dyn IsChip>> = vec![];
         let mut rng = rand::thread_rng();
         for _ in 0..self.original_value {
@@ -52,13 +53,17 @@ impl IsChip for BlueChip {
         }
 
         if !drawn_chips.is_empty() {
-            let return_chip = drawn_chips[0].clone();
+            let mut first_chip = drawn_chips[0].clone();
             for i in 1..drawn_chips.len() {
                 player.bag.push(drawn_chips[i].clone());
             }
-            return Some(return_chip);
+            if first_chip.get_color() == "blue" {
+                player.board.play_chip(&first_chip);
+                first_chip.perform_chapter_one_logic(player);
+            } else {
+                first_chip.perform_chapter_one_logic(player);
+                player.board.play_chip(&first_chip);
+            }
         }
-
-        None
     }
 }
