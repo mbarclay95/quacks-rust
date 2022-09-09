@@ -1,4 +1,3 @@
-use core::panicking::panic;
 use log::info;
 use rand::Rng;
 

@@ -73,8 +73,10 @@ impl Game {
         for player in self.players.iter_mut() {
             player.handle_green_chips();
             player.handle_purple_chips();
-            // this needs to be reworked
-            player.get_black_chips_value()
+
+            // todo!();
+            // this needs to be reworked but for now everyone gets the reward
+            player.get_black_chips_value();
         }
     }
 
