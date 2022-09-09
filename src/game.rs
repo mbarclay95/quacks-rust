@@ -61,10 +61,10 @@ impl Game {
     }
 
     fn phase_2(&mut self) {
-        let max_board_space_option = self.players.iter().filter(|player| !player.is_exploded()).map(|player| player.board.get_board_space_position()).max_by_key(|position| *position);
+        let max_board_space_option = self.players.iter().filter(|player| !player.is_exploded()).map(|player| player.board.get_board_position()).max_by_key(|position| *position);
 
         if let Some(max_board_space) = max_board_space_option {
-            self.players.iter_mut().filter(|player| !player.is_exploded() && player.board.get_board_space_position() == max_board_space).for_each(|player| player.phase_2_role_dice());
+            self.players.iter_mut().filter(|player| !player.is_exploded() && player.board.get_board_position() == max_board_space).for_each(|player| player.phase_2_role_dice());
         }
     }
 

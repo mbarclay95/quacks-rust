@@ -5,6 +5,7 @@ use crate::players::board_space::{BoardSpace, LAST_PLAYABLE_SPACE};
 pub struct Board {
     pub explode_limit: usize,
     pub start_index: usize, // droplet
+    current_position: usize,
     bonus_value: usize, // rat tail
     played_chips: Vec<PlayedSpace>,
 }
@@ -18,6 +19,7 @@ pub struct PlayedSpace {
 impl Board {
     pub fn new() -> Self {
         Board {
+            current_position: 1,
             start_index: 1,
             bonus_value: 0,
             explode_limit: 7,
@@ -25,9 +27,17 @@ impl Board {
         }
     }
 
+    pub fn get_board_position(&self) -> usize {
+        self.current_position
+    }
+
+    pub fn reset_board(&mut self) {
+        self.current_position = self.start_index + self.bonus_value;
+        self.played_chips = vec![];
+    }
+
     pub fn get_current_space(&self) -> &BoardSpace {
-        let current_position = self.get_board_space_position();
-        BoardSpace::get_board_space(current_position).unwrap_or_else(|_| panic!("index: {}, board space out of range. \n{:?}", current_position, self))
+        BoardSpace::get_board_space(self.current_position).unwrap_or_else(|_| panic!("index: {}, board space out of range. \n{:?}", self.current_position, self))
     }
 
     pub fn get_played_chip_len(&self) -> usize {
@@ -43,19 +53,20 @@ impl Board {
     }
 
     pub fn play_chip(&mut self, chip: &Box<dyn IsChip>) {
-        let board_space_index = if self.get_board_space_position() + (chip.get_value() - 1) > LAST_PLAYABLE_SPACE {
+        let board_space_index = if self.current_position + (chip.get_value() - 1) > LAST_PLAYABLE_SPACE {
             LAST_PLAYABLE_SPACE
         } else {
-            self.get_board_space_position() + (chip.get_value() - 1)
+            self.current_position + (chip.get_value() - 1)
         };
         self.played_chips.push(PlayedSpace {
             _board_space_index: board_space_index,
             chip: chip.clone_dyn()
         });
-    }
-
-    pub fn get_board_space_position(&self) -> usize {
-        self.played_chips.iter().map(|played_space| played_space.chip.get_value()).reduce(|accum, value| accum + value).unwrap_or(0) + self.start_index + self.bonus_value
+        if board_space_index == LAST_PLAYABLE_SPACE {
+            self.current_position = LAST_PLAYABLE_SPACE + 1;
+        } else {
+            self.current_position += chip.get_value();
+        }
     }
 
     pub fn get_played_chips_of_color(&self, color: &str) -> Vec<&PlayedSpace> {
@@ -85,10 +96,6 @@ impl Board {
 
     pub fn check_if_exploded(&self) -> bool {
         self.get_white_count() > self.explode_limit
-    }
-
-    pub fn clear_board(&mut self) {
-        self.played_chips = vec![];
     }
 }
 

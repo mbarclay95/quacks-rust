@@ -48,7 +48,7 @@ impl Player {
     }
 
     pub fn play_through_phase_1(&mut self) {
-        self.reset_bag();
+        self.reset_bag_and_board();
         while !self.stop_drawing() {
             self.draw_chip();
         }
@@ -222,11 +222,11 @@ impl Player {
         }
     }
 
-    fn stop_drawing(&self) -> bool {
+    pub fn stop_drawing(&self) -> bool {
         if self.bag.is_empty() || self.is_exploded() {
             return true;
         }
-        if self.board.get_board_space_position() >= LAST_PLAYABLE_SPACE {
+        if self.board.get_board_position() >= LAST_PLAYABLE_SPACE {
             return true;
         }
         let white_count = self.board.get_white_count();
@@ -247,8 +247,8 @@ impl Player {
         self.board.check_if_exploded()
     }
 
-    pub fn reset_bag(&mut self) {
-        self.board.clear_board();
+    pub fn reset_bag_and_board(&mut self) {
+        self.board.reset_board();
         self.bag = self.all_chips.clone();
     }
 

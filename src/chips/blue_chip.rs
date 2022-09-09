@@ -38,6 +38,9 @@ impl IsChip for BlueChip {
     }
 
     fn perform_chapter_one_logic(&mut self, player: &mut Player) {
+        if player.stop_drawing() {
+            return;
+        }
         player.player_stats.blue_activation_count += 1;
         let mut drawn_chips: Vec<Box<dyn IsChip>> = vec![];
         let mut rng = rand::thread_rng();
