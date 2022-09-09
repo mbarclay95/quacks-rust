@@ -47,6 +47,15 @@ impl Player {
         }
     }
 
+    pub fn is_exploded(&self) -> bool {
+        self.board.check_if_exploded()
+    }
+
+    pub fn reset_bag_and_board(&mut self) {
+        self.board.reset_board();
+        self.bag = self.all_chips.clone();
+    }
+
     pub fn play_through_phase_1(&mut self) {
         self.reset_bag_and_board();
         while !self.stop_drawing() {
@@ -56,6 +65,55 @@ impl Player {
             self.player_stats.times_exploded += 1;
         }
         info!("Made it to board index: {} and exploded = {}", self.board.get_board_position(), self.is_exploded());
+    }
+
+    pub fn stop_drawing(&self) -> bool {
+        if self.bag.is_empty() || self.is_exploded() {
+            return true;
+        }
+        if self.board.get_board_position() >= LAST_PLAYABLE_SPACE {
+            return true;
+        }
+        let mut num_of_chips_make_explode = 0;
+        let white_count = self.board.get_white_count();
+        info!("white count at {}", white_count);
+        for white_chip in self.bag.iter().filter(|p| p.get_color() == "white").collect::<Vec<&Box<dyn IsChip>>>() {
+            if white_count + white_chip.get_value() > self.board.explode_limit {
+                num_of_chips_make_explode += 1;
+            }
+        }
+
+        let chance_of_exploding = num_of_chips_make_explode as f32 / self.bag.len() as f32;
+        info!("{:.2}% chance of exploding", chance_of_exploding * 100.0);
+        let threshold = 0.22;
+
+        chance_of_exploding > threshold
+    }
+
+    pub fn draw_chip(&mut self) {
+        if self.bag.is_empty() {
+            return;
+        }
+        let mut rng = rand::thread_rng();
+        let index = rng.gen_range(0..self.bag.len());
+        let mut drawn_chip = self.bag[index].clone();
+        info!("Drawn chip: {:?}", drawn_chip);
+        if drawn_chip.get_color() == "white" && self.has_potion && rand::random() {
+            info!("Used potion");
+            self.player_stats.num_potions_used += 1;
+            self.has_potion = false;
+            return;
+        }
+        self.bag.remove(index);
+
+        // I think this is the only chip in the game that needs to be played before logic happens
+        if matches!(SELECTED_CHIP_SET, ChipSet::ChapterOne) && drawn_chip.get_color() == "blue" {
+            self.board.play_chip(&drawn_chip);
+            drawn_chip.perform_chip_logic(self);
+        } else {
+            drawn_chip.perform_chip_logic(self);
+            self.board.play_chip(&drawn_chip);
+        }
     }
 
     pub fn phase_2_role_dice(&mut self) {
@@ -103,10 +161,6 @@ impl Player {
                 }
             }
         }
-    }
-
-    pub fn round_6_add_white_chip(&mut self) {
-        self.all_chips.push(Box::new(WhiteChip::new(1)));
     }
 
     pub fn handle_purple_chips(&mut self) {
@@ -177,15 +231,7 @@ impl Player {
         self.all_chips.push(purchased_chip.chip.clone());
         self.player_stats.increment_correct_chip_count(purchased_chip.chip.get_color());
         info!("Purchased: {:?}", purchased_chip);
-        // let most_expensive_chip = purchasable_chips.iter().filter(|p| p.price <= money_amount).max_by_key(|p| p.price);
-        // let mut already_purchased_color = "";
-        // if let Some(purchasable_chip) = most_expensive_chip {
-        //     money_amount -= purchasable_chip.price;
-        //     already_purchased_color = purchasable_chip.chip.get_color();
-        //     self.all_chips.push(purchasable_chip.chip.clone());
-        //     self.player_stats.increment_correct_chip_count(purchasable_chip.chip.get_color());
-        //     info!("Purchased: {:?}", purchasable_chip);
-        // }
+
         let affordable_chips = purchasable_chips.iter().filter(|p| p.price <= money_amount && p.chip.get_color() != already_purchased_color).collect::<Vec<&PurchasableChip>>();
         if affordable_chips.is_empty() {
             return;
@@ -195,12 +241,6 @@ impl Player {
         self.all_chips.push(purchased_chip.chip.clone());
         self.player_stats.increment_correct_chip_count(purchased_chip.chip.get_color());
         info!("Purchased: {:?}", purchased_chip);
-        // let most_expensive_chip = purchasable_chips.iter().filter(|p| p.price <= money_amount && p.chip.get_color() != already_purchased_color).max_by_key(|p| p.price);
-        // if let Some(purchasable_chip) = most_expensive_chip {
-        //     self.all_chips.push(purchasable_chip.chip.clone());
-        //     self.player_stats.increment_correct_chip_count(purchasable_chip.chip.get_color());
-        //     info!("Purchased: {:?}", purchasable_chip);
-        // }
     }
 
     pub fn phase_7_spend_gems(&mut self, final_round: bool) {
@@ -223,59 +263,7 @@ impl Player {
         }
     }
 
-    pub fn stop_drawing(&self) -> bool {
-        if self.bag.is_empty() || self.is_exploded() {
-            return true;
-        }
-        if self.board.get_board_position() >= LAST_PLAYABLE_SPACE {
-            return true;
-        }
-        let white_count = self.board.get_white_count();
-        info!("white count at {}", white_count);
-        let mut can_explode = false;
-        for white_chip in self.bag.iter().filter(|p| p.get_color() == "white").collect::<Vec<&Box<dyn IsChip>>>() {
-            if white_count + white_chip.get_value() > self.board.explode_limit {
-                can_explode = true;
-                info!("can explode with {:?}", white_chip);
-                break;
-            }
-        }
-
-        can_explode
-    }
-
-    pub fn is_exploded(&self) -> bool {
-        self.board.check_if_exploded()
-    }
-
-    pub fn reset_bag_and_board(&mut self) {
-        self.board.reset_board();
-        self.bag = self.all_chips.clone();
-    }
-
-    pub fn draw_chip(&mut self) {
-        if self.bag.is_empty() {
-            return;
-        }
-        let mut rng = rand::thread_rng();
-        let index = rng.gen_range(0..self.bag.len());
-        let mut drawn_chip = self.bag[index].clone();
-        info!("Drawn chip: {:?}", drawn_chip);
-        if drawn_chip.get_color() == "white" && self.has_potion && rand::random() {
-            info!("Used potion");
-            self.player_stats.num_potions_used += 1;
-            self.has_potion = false;
-            return;
-        }
-        self.bag.remove(index);
-
-        // I think this is the only chip in the game that needs to be played before logic happens
-        if matches!(SELECTED_CHIP_SET, ChipSet::ChapterOne) && drawn_chip.get_color() == "blue" {
-            self.board.play_chip(&drawn_chip);
-            drawn_chip.perform_chip_logic(self);
-        } else {
-            drawn_chip.perform_chip_logic(self);
-            self.board.play_chip(&drawn_chip);
-        }
+    pub fn round_6_add_white_chip(&mut self) {
+        self.all_chips.push(Box::new(WhiteChip::new(1)));
     }
 }
