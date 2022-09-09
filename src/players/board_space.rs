@@ -1,8 +1,8 @@
-pub const MAX_BOARD_SPACES: usize = 54;
+pub const NUM_OF_BOARD_SPACE: usize = 54;
 // the very last space is cannot be played on
-pub const LAST_PLAYABLE_SPACE: usize = MAX_BOARD_SPACES - 1;
+pub const LAST_PLAYABLE_SPACE: usize = NUM_OF_BOARD_SPACE - 2;
 
-static BOARD_SPACES: [BoardSpace; MAX_BOARD_SPACES] = [
+static BOARD_SPACES: [BoardSpace; NUM_OF_BOARD_SPACE] = [
     BoardSpace { money: 0, points: 0, gem: false },
     BoardSpace { money: 1, points: 0, gem: false },
     BoardSpace { money: 2, points: 0, gem: false },
@@ -68,7 +68,7 @@ pub struct BoardSpace {
 
 impl BoardSpace {
     pub fn get_board_space(index: usize) -> Result<&'static BoardSpace, &'static str> {
-        if index >= MAX_BOARD_SPACES {
+        if index >= NUM_OF_BOARD_SPACE {
             return Err("board space out of range");
         }
 

@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 use crate::{ChipSet, SELECTED_CHIP_SET};
 use crate::players::player::Player;
 
-pub trait IsChip {
+pub trait IsChip : Send {
     fn clone_dyn(&self) -> Box<dyn IsChip>;
     fn debug_dyn(&self, f: &mut Formatter<'_>) -> std::fmt::Result;
     fn get_value(&self) -> usize;
