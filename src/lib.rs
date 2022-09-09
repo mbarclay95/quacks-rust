@@ -1,3 +1,5 @@
+extern crate core;
+
 use crate::chip_set::ChipSet;
 
 pub mod game;

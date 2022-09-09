@@ -1,4 +1,5 @@
 use std::fmt::Formatter;
+
 use crate::chips::is_chip::IsChip;
 use crate::players::player::Player;
 
@@ -6,7 +7,7 @@ use crate::players::player::Player;
 pub struct RedChip {
     value: usize,
     _original_value: usize,
-    color: &'static str
+    color: &'static str,
 }
 
 impl RedChip {
@@ -14,7 +15,7 @@ impl RedChip {
         RedChip {
             value,
             _original_value: value,
-            color: "red"
+            color: "red",
         }
     }
 }
@@ -39,11 +40,11 @@ impl IsChip for RedChip {
     fn perform_chapter_one_logic(&mut self, player: &mut Player) {
         let orange_count = player.board.get_played_chips_of_color("orange").len();
         match orange_count {
-            0 => {},
+            0 => {}
             1 | 2 => {
                 self.value += 1;
                 player.player_stats.red_activation_count += 1;
-            },
+            }
             3 | _ => {
                 self.value += 2;
                 player.player_stats.red_activation_count += 1;

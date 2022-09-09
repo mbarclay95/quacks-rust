@@ -1,5 +1,7 @@
 use std::fmt::Formatter;
+
 use rand::Rng;
+
 use crate::chips::is_chip::IsChip;
 use crate::players::player::Player;
 
@@ -7,7 +9,7 @@ use crate::players::player::Player;
 pub struct BlueChip {
     value: usize,
     original_value: usize,
-    color: &'static str
+    color: &'static str,
 }
 
 impl BlueChip {
@@ -15,7 +17,7 @@ impl BlueChip {
         BlueChip {
             value,
             original_value: value,
-            color: "blue"
+            color: "blue",
         }
     }
 }

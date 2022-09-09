@@ -1,3 +1,4 @@
+use core::panicking::panic;
 use log::info;
 use rand::Rng;
 
@@ -8,7 +9,7 @@ use crate::chips::is_chip::IsChip;
 use crate::chips::orange_chip::OrangeChip;
 use crate::chips::white_chip::WhiteChip;
 use crate::players::board::Board;
-use crate::players::board_space::{LAST_PLAYABLE_SPACE};
+use crate::players::board_space::LAST_PLAYABLE_SPACE;
 use crate::players::player_stats::PlayerStats;
 
 #[derive(Debug)]
@@ -55,7 +56,7 @@ impl Player {
         if self.is_exploded() {
             self.player_stats.times_exploded += 1;
         }
-        info!("Made it to: {:?} and exploded = {}", self.board.get_current_space(), self.is_exploded());
+        info!("Made it to board index: {} and exploded = {}", self.board.get_board_position(), self.is_exploded());
     }
 
     pub fn phase_2_role_dice(&mut self) {
@@ -144,7 +145,7 @@ impl Player {
     }
 
     pub fn phase_4_gem_check(&mut self) {
-        if self.board.get_current_space().gem {
+        if self.board.get_current_space().unwrap_or_else(|_| panic!("Board out of index: {:?}", self)).gem {
             info!("Received a gem from board space");
             self.gems += 1;
             self.player_stats.gems_from_board += 1;
@@ -152,12 +153,13 @@ impl Player {
     }
 
     pub fn phase_5_points(&mut self) {
-        self.score += self.board.get_current_space().points;
-        info!("Received {} points, for total of {} points", self.board.get_current_space().points, self.score);
+        let points = self.board.get_current_space().unwrap_or_else(|_| panic!("Board out of index: {:?}", self)).points;
+        self.score += points;
+        info!("Received {} points, for total of {} points", points, self.score);
     }
 
     pub fn phase_6_buy_chips(&mut self, purchasable_chips: &[PurchasableChip], final_round: bool) {
-        let mut money_amount = self.board.get_current_space().money;
+        let mut money_amount = self.board.get_current_space().unwrap_or_else(|_| panic!("Board out of index: {:?}", self)).money;
         if final_round {
             self.score += money_amount / 5;
             info!("Received {} points from money", money_amount / 5);

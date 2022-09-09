@@ -1,4 +1,3 @@
-
 #[derive(Debug)]
 pub struct PlayerStats {
     pub starting_index: i32,
@@ -55,7 +54,7 @@ impl PlayerStats {
             score: 0,
             start_advance_from_dice: 0,
             points_from_gems: 0,
-            bought_start_advances: 0
+            bought_start_advances: 0,
         }
     }
 

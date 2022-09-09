@@ -4,16 +4,18 @@ use crate::players::board_space::{BoardSpace, LAST_PLAYABLE_SPACE};
 #[derive(Debug)]
 pub struct Board {
     pub explode_limit: usize,
-    pub start_index: usize, // droplet
+    pub start_index: usize,
+    // droplet
     current_position: usize,
-    bonus_value: usize, // rat tail
+    bonus_value: usize,
+    // rat tail
     played_chips: Vec<PlayedSpace>,
 }
 
 #[derive(Debug)]
 pub struct PlayedSpace {
     _board_space_index: usize,
-    chip: Box<dyn IsChip>
+    chip: Box<dyn IsChip>,
 }
 
 impl Board {
@@ -23,7 +25,7 @@ impl Board {
             start_index: 1,
             bonus_value: 0,
             explode_limit: 7,
-            played_chips: vec![]
+            played_chips: vec![],
         }
     }
 
@@ -36,8 +38,8 @@ impl Board {
         self.played_chips = vec![];
     }
 
-    pub fn get_current_space(&self) -> &BoardSpace {
-        BoardSpace::get_board_space(self.current_position).unwrap_or_else(|_| panic!("index: {}, board space out of range. \n{:?}", self.current_position, self))
+    pub fn get_current_space(&self) -> Result<&BoardSpace, &'static str> {
+        BoardSpace::get_board_space(self.current_position)
     }
 
     pub fn get_played_chip_len(&self) -> usize {
@@ -60,7 +62,7 @@ impl Board {
         };
         self.played_chips.push(PlayedSpace {
             _board_space_index: board_space_index,
-            chip: chip.clone_dyn()
+            chip: chip.clone_dyn(),
         });
         if board_space_index == LAST_PLAYABLE_SPACE {
             self.current_position = LAST_PLAYABLE_SPACE + 1;

@@ -1,4 +1,5 @@
 use std::fmt::Formatter;
+
 use crate::chips::is_chip::IsChip;
 use crate::players::player::Player;
 
@@ -6,7 +7,7 @@ use crate::players::player::Player;
 pub struct OrangeChip {
     value: usize,
     _original_value: usize,
-    color: &'static str
+    color: &'static str,
 }
 
 impl OrangeChip {
@@ -14,7 +15,7 @@ impl OrangeChip {
         OrangeChip {
             value,
             _original_value: value,
-            color: "orange"
+            color: "orange",
         }
     }
 }
@@ -36,6 +37,5 @@ impl IsChip for OrangeChip {
         self.color
     }
 
-    fn perform_chapter_one_logic(&mut self, _player: &mut Player) {
-    }
+    fn perform_chapter_one_logic(&mut self, _player: &mut Player) {}
 }

@@ -63,7 +63,7 @@ static BOARD_SPACES: [BoardSpace; NUM_OF_BOARD_SPACE] = [
 pub struct BoardSpace {
     pub money: i32,
     pub points: i32,
-    pub gem: bool
+    pub gem: bool,
 }
 
 impl BoardSpace {

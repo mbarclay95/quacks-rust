@@ -1,4 +1,5 @@
 use log::info;
+
 use crate::chip_set::{ChipSet, PurchasableChip};
 use crate::players::player::Player;
 
@@ -6,7 +7,7 @@ use crate::players::player::Player;
 pub struct Game {
     pub players: Vec<Player>,
     round: i32,
-    purchasable_chips: Vec<PurchasableChip>
+    purchasable_chips: Vec<PurchasableChip>,
 }
 
 impl Game {
@@ -106,13 +107,13 @@ impl Game {
 
     fn start_of_round_logic(&mut self) {
         match self.round {
-            2 => {self.purchasable_chips.append(ChipSet::get_yellow_chips().as_mut())},
-            3 => {self.purchasable_chips.append(ChipSet::get_purple_chips().as_mut())},
+            2 => { self.purchasable_chips.append(ChipSet::get_yellow_chips().as_mut()) }
+            3 => { self.purchasable_chips.append(ChipSet::get_purple_chips().as_mut()) }
             6 => {
                 for player in self.players.iter_mut() {
                     player.round_6_add_white_chip();
                 }
-            },
+            }
             _ => {}
         }
     }

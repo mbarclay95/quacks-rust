@@ -1,4 +1,5 @@
 use std::fmt::Formatter;
+
 use crate::chips::is_chip::IsChip;
 use crate::players::player::Player;
 
@@ -6,7 +7,7 @@ use crate::players::player::Player;
 pub struct YellowChip {
     value: usize,
     _original_value: usize,
-    color: &'static str
+    color: &'static str,
 }
 
 impl YellowChip {
@@ -14,7 +15,7 @@ impl YellowChip {
         YellowChip {
             value,
             _original_value: value,
-            color: "yellow"
+            color: "yellow",
         }
     }
 }
