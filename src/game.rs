@@ -89,7 +89,7 @@ impl Game {
     fn phase_5_and_6(&mut self) {
         for player in self.players.iter_mut() {
             if player.is_exploded() {
-                if self.round > 6 {
+                if self.round > 4 {
                     player.phase_5_points();
                 } else {
                     player.phase_6_buy_chips(&self.purchasable_chips, self.round == 9);

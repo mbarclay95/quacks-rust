@@ -1,6 +1,6 @@
 use std::fmt::Formatter;
 
-use rand::Rng;
+use rand::{Rng, thread_rng};
 
 use crate::chips::is_chip::IsChip;
 use crate::players::player::Player;
@@ -45,22 +45,20 @@ impl IsChip for BlueChip {
         }
         player.player_stats.blue_activation_count += 1;
         let mut drawn_chips: Vec<Box<dyn IsChip>> = vec![];
-        let mut rng = rand::thread_rng();
         for _ in 0..self.original_value {
             if player.bag.is_empty() {
                 break;
             }
-            let index = rng.gen_range(0..player.bag.len());
+            let index = thread_rng().gen_range(0..player.bag.len());
             if player.bag[index].get_color() != "white" {
-                drawn_chips.push(player.bag[index].clone());
-                player.bag.remove(index);
+                drawn_chips.push(player.bag.remove(index));
             }
         }
 
         if !drawn_chips.is_empty() {
-            let mut first_chip = drawn_chips[0].clone();
-            for i in 1..drawn_chips.len() {
-                player.bag.push(drawn_chips[i].clone());
+            let mut first_chip = drawn_chips.remove(0);
+            for _ in 0..drawn_chips.len() {
+                player.bag.push(drawn_chips.remove(0));
             }
             if first_chip.get_color() == "blue" {
                 player.board.play_chip(&first_chip);

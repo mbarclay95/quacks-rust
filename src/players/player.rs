@@ -1,5 +1,5 @@
 use log::info;
-use rand::Rng;
+use rand::{Rng, thread_rng};
 
 use crate::{ChipSet, SELECTED_CHIP_SET};
 use crate::chip_set::PurchasableChip;
@@ -94,17 +94,15 @@ impl Player {
         if self.bag.is_empty() {
             return;
         }
-        let mut rng = rand::thread_rng();
-        let index = rng.gen_range(0..self.bag.len());
-        let mut drawn_chip = self.bag[index].clone();
-        info!("Drawn chip: {:?}", drawn_chip);
-        if drawn_chip.get_color() == "white" && self.has_potion && rand::random() {
+        let index = thread_rng().gen_range(0..self.bag.len());
+        if self.bag[index].get_color() == "white" && self.has_potion && rand::random() {
             info!("Used potion");
             self.player_stats.num_potions_used += 1;
             self.has_potion = false;
             return;
         }
-        self.bag.remove(index);
+        let mut drawn_chip = self.bag.remove(index);
+        info!("Drawn chip: {:?}", drawn_chip);
 
         // I think this is the only chip in the game that needs to be played before logic happens
         if matches!(SELECTED_CHIP_SET, ChipSet::ChapterOne) && drawn_chip.get_color() == "blue" {
@@ -117,8 +115,7 @@ impl Player {
     }
 
     pub fn phase_2_role_dice(&mut self) {
-        let mut rng = rand::thread_rng();
-        let rand_num: i32 = rng.gen_range(0..6);
+        let rand_num: i32 = thread_rng().gen_range(0..6);
         info!("Dice role : {}", rand_num);
         match rand_num {
             0 | 1 => {
