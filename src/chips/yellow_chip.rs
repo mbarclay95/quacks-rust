@@ -1,6 +1,7 @@
 use std::fmt::Formatter;
 
 use crate::chips::is_chip::IsChip;
+use crate::confirm;
 use crate::players::player::Player;
 
 #[derive(Clone, Debug)]
@@ -44,8 +45,9 @@ impl IsChip for YellowChip {
                 self.value += last_played_chip.get_value();
                 player.bag.push(last_played_chip.clone_dyn());
                 player.board.remove_last_played_chip().unwrap();
-                player.player_stats.yellow_activation_count += 1;
+                player.player_stats.yellow_activation_count += 1.0;
             }
+            confirm(format!("Last chip was white for new value of {}", self.value).as_str());
         }
     }
 }

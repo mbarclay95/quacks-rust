@@ -3,6 +3,7 @@ use std::fmt::Formatter;
 use rand::{Rng, thread_rng};
 
 use crate::chips::is_chip::IsChip;
+use crate::confirm;
 use crate::players::player::Player;
 
 #[derive(Clone, Debug)]
@@ -40,16 +41,18 @@ impl IsChip for BlueChip {
     }
 
     fn perform_chapter_one_logic(&mut self, player: &mut Player) {
-        if player.stop_drawing() {
+        if player.stop_drawing(true) {
+            confirm("Stop drawing for blue chip");
             return;
         }
-        player.player_stats.blue_activation_count += 1;
+        player.player_stats.blue_activation_count += 1.0;
         let mut drawn_chips: Vec<Box<dyn IsChip>> = vec![];
         for _ in 0..self.original_value {
             if player.bag.is_empty() {
                 break;
             }
             let index = thread_rng().gen_range(0..player.bag.len());
+            confirm(format!("Drawn chip for blue: {:?}", player.bag[index]).as_str());
             if player.bag[index].get_color() != "white" {
                 drawn_chips.push(player.bag.remove(index));
             }
@@ -57,6 +60,7 @@ impl IsChip for BlueChip {
 
         if !drawn_chips.is_empty() {
             let mut first_chip = drawn_chips.remove(0);
+            confirm(format!("Selected chip for blue: {:?}", first_chip).as_str());
             for _ in 0..drawn_chips.len() {
                 player.bag.push(drawn_chips.remove(0));
             }
@@ -67,6 +71,8 @@ impl IsChip for BlueChip {
                 first_chip.perform_chapter_one_logic(player);
                 player.board.play_chip(&first_chip);
             }
+        } else {
+            confirm("No non white chips drawn");
         }
     }
 }

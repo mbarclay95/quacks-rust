@@ -1,6 +1,11 @@
 use log::info;
 
 use crate::chip_set::{ChipSet, PurchasableChip};
+use crate::confirm;
+use crate::players::ai::chip_buying_strategy::ChipBuyingStrategy;
+use crate::players::ai::gem_spending_strategy::GemSpendingStrategy;
+use crate::players::ai::potion_strategy::PotionStrategy;
+use crate::players::ai::strategies::Strategies;
 use crate::players::player::Player;
 
 #[derive(Debug)]
@@ -16,7 +21,11 @@ impl Game {
             round: 1,
             purchasable_chips: ChipSet::get_starting_purchasable_chips(),
             players: vec![
-                Player::new("Michael")
+                Player::new("Michael", Strategies {
+                    potion_strategy: PotionStrategy::OnlyIfChanceOfExploding,
+                    gem_spending_strategy: GemSpendingStrategy::NeverPotion,
+                    chip_buying_strategy: ChipBuyingStrategy::BlackThenOrangeAndPreferColor("red".into()),
+                })
             ],
         }
     }
@@ -26,12 +35,13 @@ impl Game {
             self.play_through_round();
         }
         for player in self.players.iter_mut() {
-            player.player_stats.starting_index = player.board.start_index as i32;
-            player.player_stats.score = player.score;
+            player.player_stats.starting_index = player.board.start_index as f32;
+            player.player_stats.score = player.score as f32;
         }
     }
 
     fn play_through_round(&mut self) {
+        confirm(format!("Starting round {}", self.round).as_str());
         info!("\nStarting round {}", self.round);
         self.start_of_round_logic();
         self.phase_1();
@@ -62,10 +72,15 @@ impl Game {
     }
 
     fn phase_2(&mut self) {
-        let max_board_space_option = self.players.iter().filter(|player| !player.is_exploded()).map(|player| player.board.get_board_position()).max_by_key(|position| *position);
+        let max_board_space_option = self.players.iter()
+            .filter(|player| !player.is_exploded())
+            .map(|player| player.board.get_board_position())
+            .max_by_key(|position| *position);
 
         if let Some(max_board_space) = max_board_space_option {
-            self.players.iter_mut().filter(|player| !player.is_exploded() && player.board.get_board_position() == max_board_space).for_each(|player| player.phase_2_role_dice());
+            self.players.iter_mut()
+                .filter(|player| !player.is_exploded() && player.board.get_board_position() == max_board_space)
+                .for_each(|player| player.phase_2_role_dice());
         }
     }
 
@@ -92,11 +107,19 @@ impl Game {
                 if self.round > 4 {
                     player.phase_5_points();
                 } else {
-                    player.phase_6_buy_chips(&self.purchasable_chips, self.round == 9);
+                    if self.round == 9 {
+                        player.phase_6_final_round();
+                    } else {
+                        player.phase_6_buy_chips(&self.purchasable_chips);
+                    }
                 }
             } else {
-                player.phase_6_buy_chips(&self.purchasable_chips, self.round == 9);
                 player.phase_5_points();
+                if self.round == 9 {
+                    player.phase_6_final_round();
+                } else {
+                    player.phase_6_buy_chips(&self.purchasable_chips);
+                }
             }
         }
     }

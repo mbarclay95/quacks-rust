@@ -43,6 +43,12 @@ impl ChipSet {
             ]
         }
     }
+    
+    pub fn get_black_chip_price() -> i32 {
+        match SELECTED_CHIP_SET {
+            ChipSet::ChapterOne => 10
+        }
+    }
 
     pub fn get_yellow_chips() -> Vec<PurchasableChip> {
         match SELECTED_CHIP_SET {
@@ -62,5 +68,20 @@ impl ChipSet {
                 PurchasableChip { price: 9, chip: Box::new(PurpleChip::new(1)) },
             ]
         }
+    }
+}
+
+impl PurchasableChip {
+
+    pub fn get_affordable(chips: &[PurchasableChip], money_amount: i32) -> Vec<&PurchasableChip> {
+        chips.iter().filter(|p| p.price <= money_amount).collect::<Vec<&PurchasableChip>>()
+    }
+
+    pub fn get_affordable_exclude_color(chips: &[PurchasableChip], money_amount: i32, exclude_color: String) -> Vec<&PurchasableChip> {
+        chips.iter().filter(|p| p.price <= money_amount && p.chip.get_color() != exclude_color.as_str()).collect::<Vec<&PurchasableChip>>()
+    }
+
+    pub fn get_affordable_by_color(chips: &[PurchasableChip], money_amount: i32, color: String) -> Vec<&PurchasableChip> {
+        chips.iter().filter(|p| p.price <= money_amount && p.chip.get_color() == color.as_str()).collect::<Vec<&PurchasableChip>>()
     }
 }

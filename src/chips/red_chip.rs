@@ -1,6 +1,7 @@
 use std::fmt::Formatter;
 
 use crate::chips::is_chip::IsChip;
+use crate::confirm;
 use crate::players::player::Player;
 
 #[derive(Clone, Debug)]
@@ -43,12 +44,13 @@ impl IsChip for RedChip {
             0 => {}
             1 | 2 => {
                 self.value += 1;
-                player.player_stats.red_activation_count += 1;
+                player.player_stats.red_activation_count += 1.0;
             }
             3 | _ => {
                 self.value += 2;
-                player.player_stats.red_activation_count += 1;
+                player.player_stats.red_activation_count += 1.0;
             }
         }
+        confirm(format!("{} oranges gives new value of {}", orange_count, self.value).as_str());
     }
 }
